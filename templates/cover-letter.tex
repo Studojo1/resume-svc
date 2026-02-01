@@ -1,24 +1,39 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[a4paper]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
 \hypersetup{colorlinks=true,urlcolor=blue,linkcolor=black}
 
+% Custom commands for address and contact info
+\newcommand{\ProvideAdress}[3]{}
+\newcommand{\ProvideEmail}[2]{}
+\newcommand{\ProvidePhone}[2]{}
+\newcommand{\ProvideName}[2]{}
+
+% Signature line command
+\newcommand{\SignatureLine}[2]{#1\\[2cm]\rule{#2}{0.4pt}}
+
+% Date command
+\newcommand{\date}[2]{#1}
+
 \begin{document}
 
+% Your information
 \noindent
 {{CONTACT_INFO}}
 
 \vspace{0.5cm}
 
-\today
+{{DATE}}
 
 \vspace{0.5cm}
 
+% Company Information
 {{COMPANY_INFO}}
 
 \vspace{0.5cm}
 
+% Subject
 {{SUBJECT}}
 
 \vspace{0.3cm}
@@ -27,11 +42,17 @@ Dear Hiring Manager,
 
 \vspace{0.3cm}
 
+% Body
 {{BODY}}
 
 \vspace{0.3cm}
 
-Sincerely,\\
+% Signature
 {{SIGNATURE}}
+
+\vspace{0.3cm}
+
+% Attachments
+\textit{Attachments: CV, Resume}
 
 \end{document}

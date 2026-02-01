@@ -1,31 +1,57 @@
-\documentclass[11pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
+\documentclass[letterpaper,11pt]{article}
+
 \usepackage[margin=0.75in]{geometry}
 \usepackage{enumitem}
-\usepackage{hyperref}
-\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=black}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{0pt}
+
+% Section formatting
+\titleformat{\section}{\large\bfseries}{}{0pt}{}[\titlerule\vspace{4pt}]
+\titlespacing*{\section}{0pt}{12pt}{4pt}
+
+% Custom commands
+\newcommand{\entry}[4]{
+    \textbf{#1} \hfill #2 \\
+    \textit{#3} \hfill \textit{#4}
+    \vspace{2pt}
+}
+
+\newcommand{\project}[3]{
+    \textbf{#1} \hfill #2 \\
+    \textit{#3}
+    \vspace{2pt}
+}
 
 \begin{document}
 
-\noindent
-{\Large\bfseries {{NAME}}}
+% Header
+\begin{center}
+    {\Large\textbf{{{NAME}}}}\\[4pt]
+    {{CONTACT_INFO}}
+\end{center}
 
-{{CONTACT_INFO}}
+\vspace{8pt}
 
-\vspace{0.2cm}
-\hrule
-\vspace{0.3cm}
-
+% Professional Summary
 {{SUMMARY}}
 
-{{EXPERIENCE}}
-
+% Education
 {{EDUCATION}}
 
-{{SKILLS}}
+% Experience
+{{EXPERIENCE}}
 
+% Projects
 {{PROJECTS}}
 
-{{CERTIFICATIONS}}
+% Technical Skills
+{{SKILLS}}
+
+% Achievements (Certifications)
+{{ACHIEVEMENTS}}
 
 \end{document}

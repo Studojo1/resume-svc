@@ -130,56 +130,50 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 		return "", err
 	}
 
-	// Build contact info
+	// Build contact info (single line format)
 	var contactParts []string
 	if res.ContactInfo.Email != "" {
 		contactParts = append(contactParts, fmt.Sprintf("\\href{mailto:%s}{%s}", res.ContactInfo.Email, escapeLaTeX(res.ContactInfo.Email)))
 	}
+	if res.ContactInfo.Website != "" {
+		contactParts = append(contactParts, fmt.Sprintf("\\href{https://%s}{%s}", res.ContactInfo.Website, escapeLaTeX(res.ContactInfo.Website)))
+	}
+	if res.ContactInfo.LinkedIn != "" {
+		contactParts = append(contactParts, fmt.Sprintf("\\href{https://%s}{%s}", res.ContactInfo.LinkedIn, escapeLaTeX(res.ContactInfo.LinkedIn)))
+	}
 	if res.ContactInfo.Phone != "" {
 		contactParts = append(contactParts, escapeLaTeX(res.ContactInfo.Phone))
 	}
-	if res.ContactInfo.Location != "" {
-		contactParts = append(contactParts, escapeLaTeX(res.ContactInfo.Location))
-	}
-	contactInfo := strings.Join(contactParts, " | ")
-	if res.ContactInfo.LinkedIn != "" || res.ContactInfo.Website != "" {
-		var links []string
-		if res.ContactInfo.LinkedIn != "" {
-			links = append(links, fmt.Sprintf("\\href{https://%s}{%s}", res.ContactInfo.LinkedIn, escapeLaTeX(res.ContactInfo.LinkedIn)))
-		}
-		if res.ContactInfo.Website != "" {
-			links = append(links, fmt.Sprintf("\\href{https://%s}{%s}", res.ContactInfo.Website, escapeLaTeX(res.ContactInfo.Website)))
-		}
-		if len(links) > 0 {
-			contactInfo += "\\\\\n" + strings.Join(links, " | ")
-		}
-	}
+	contactInfo := strings.Join(contactParts, " $|$ ")
 
 	// Build summary
 	summary := ""
 	if res.Summary != "" {
-		summary = fmt.Sprintf("\\section*{Professional Summary}\n%s\n", escapeLaTeX(res.Summary))
+		summary = fmt.Sprintf("\\section*{PROFESSIONAL SUMMARY}\n%s\n\\vspace{6pt}\n", escapeLaTeX(res.Summary))
 	}
 
-	// Build experience
+	// Build experience using \entry command
 	experience := ""
 	if len(res.WorkExperiences) > 0 {
-		experience = "\\section*{Professional Experience}\n\\begin{itemize}[leftmargin=*,itemsep=0.1cm]\n"
+		experience = "\\section{EXPERIENCE}\n"
 		for _, exp := range res.WorkExperiences {
+			company := escapeLaTeX(exp.Company)
+			location := ""
+			role := escapeLaTeX(exp.Role)
 			dateRange := ""
 			if exp.StartDate != nil && *exp.StartDate != "" {
 				startDate := escapeLaTeX(*exp.StartDate)
 				if exp.EndDate != nil && *exp.EndDate != "" {
-					dateRange = fmt.Sprintf("(%s - %s)", startDate, escapeLaTeX(*exp.EndDate))
+					dateRange = fmt.Sprintf("%s -- %s", startDate, escapeLaTeX(*exp.EndDate))
 				} else if exp.IsCurrent {
-					dateRange = fmt.Sprintf("(%s - Present)", startDate)
+					dateRange = fmt.Sprintf("%s -- Present", startDate)
 				} else {
-					dateRange = fmt.Sprintf("(%s)", startDate)
+					dateRange = startDate
 				}
 			}
-			experience += fmt.Sprintf("\\item \\textbf{%s} | \\textit{%s} %s\n", escapeLaTeX(exp.Role), escapeLaTeX(exp.Company), dateRange)
+			experience += fmt.Sprintf("\\entry{%s}{%s}{%s}{%s}\n", company, location, role, dateRange)
 			if exp.Description != "" {
-				experience += "\\begin{itemize}[leftmargin=0.5cm]\n"
+				experience += "\\begin{itemize}[leftmargin=1em, noitemsep, topsep=2pt]\n"
 				for _, line := range strings.Split(exp.Description, "\n") {
 					line = strings.TrimSpace(line)
 					if line != "" {
@@ -188,39 +182,41 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 				}
 				experience += "\\end{itemize}\n"
 			}
+			experience += "\\vspace{6pt}\n\n"
 		}
-		experience += "\\end{itemize}\n"
 	}
 
-	// Build education
+	// Build education using \entry command
 	education := ""
 	if len(res.Educations) > 0 {
-		education = "\\section*{Education}\n\\begin{itemize}[leftmargin=*,itemsep=0.1cm]\n"
+		education = "\\section{EDUCATION}\n"
 		for _, edu := range res.Educations {
+			institution := escapeLaTeX(edu.Institution)
+			location := ""
 			degree := escapeLaTeX(edu.Degree)
 			if edu.FieldOfStudy != "" {
-				degree += " in " + escapeLaTeX(edu.FieldOfStudy)
+				degree += ", " + escapeLaTeX(edu.FieldOfStudy)
 			}
 			dateRange := ""
 			if edu.StartDate != nil && *edu.StartDate != "" {
 				startDate := escapeLaTeX(*edu.StartDate)
 				if edu.EndDate != nil && *edu.EndDate != "" {
-					dateRange = fmt.Sprintf("(%s - %s)", startDate, escapeLaTeX(*edu.EndDate))
+					dateRange = fmt.Sprintf("%s -- %s", startDate, escapeLaTeX(*edu.EndDate))
 				} else if edu.IsCurrent {
-					dateRange = fmt.Sprintf("(%s - Present)", startDate)
+					dateRange = fmt.Sprintf("%s -- Present", startDate)
 				} else {
-					dateRange = fmt.Sprintf("(%s)", startDate)
+					dateRange = startDate
 				}
 			}
-			education += fmt.Sprintf("\\item \\textbf{%s} | \\textit{%s} %s\n", degree, escapeLaTeX(edu.Institution), dateRange)
+			education += fmt.Sprintf("\\entry{%s}{%s}{%s}{%s}\n", institution, location, degree, dateRange)
 			if edu.Description != "" {
 				education += escapeLaTeX(edu.Description) + "\n"
 			}
+			education += "\\vspace{6pt}\n\n"
 		}
-		education += "\\end{itemize}\n"
 	}
 
-	// Build skills
+	// Build skills by category
 	skills := ""
 	if len(res.Skills) > 0 {
 		skillGroups := make(map[string][]string)
@@ -234,55 +230,83 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 			}
 		}
 		if len(skillGroups) > 0 {
-			skills = "\\section*{Skills}\n"
+			skills = "\\section{TECHNICAL SKILLS}\n"
+			// Map categories to standard labels
+			categoryMap := map[string]string{
+				"Languages": "Languages",
+				"Programming Languages": "Languages",
+				"Frameworks": "Frameworks",
+				"DevOps": "DevOps",
+				"Tools": "Tools",
+				"Specializations": "Specializations",
+			}
 			var parts []string
 			for category, names := range skillGroups {
-				parts = append(parts, fmt.Sprintf("\\textbf{%s}: %s", escapeLaTeX(category), strings.Join(names, ", ")))
+				label := categoryMap[category]
+				if label == "" {
+					label = category
+				}
+				parts = append(parts, fmt.Sprintf("\\textbf{%s}: %s", escapeLaTeX(label), strings.Join(names, ", ")))
 			}
-			skills += strings.Join(parts, " | ") + "\n"
+			skills += strings.Join(parts, " \\\\\n") + "\n"
+			skills += "\\vspace{6pt}\n"
 		}
 	}
 
-	// Build projects
+	// Build projects using \project command
 	projects := ""
 	if len(res.Projects) > 0 {
-		projects = "\\section*{Projects}\n\\begin{itemize}[leftmargin=*,itemsep=0.1cm]\n"
+		projects = "\\section{PROJECTS}\n"
 		for _, proj := range res.Projects {
-			title := fmt.Sprintf("\\textbf{%s}", escapeLaTeX(proj.Title))
-			if proj.URL != "" {
-				title += fmt.Sprintf(" | \\href{https://%s}{%s}", proj.URL, escapeLaTeX(proj.URL))
-			}
+			title := escapeLaTeX(proj.Title)
+			dateRange := ""
 			if proj.StartDate != nil && *proj.StartDate != "" {
 				startDate := escapeLaTeX(*proj.StartDate)
 				if proj.EndDate != nil && *proj.EndDate != "" {
-					title += fmt.Sprintf(" (%s - %s)", startDate, escapeLaTeX(*proj.EndDate))
+					dateRange = fmt.Sprintf("%s -- %s", startDate, escapeLaTeX(*proj.EndDate))
 				} else {
-					title += fmt.Sprintf(" (%s)", startDate)
+					dateRange = startDate
 				}
 			}
-			projects += fmt.Sprintf("\\item %s\n", title)
-			if proj.Description != "" {
-				projects += escapeLaTeX(proj.Description) + "\n"
+			technologies := ""
+			if proj.URL != "" {
+				technologies = fmt.Sprintf("\\href{https://%s}{%s}", proj.URL, escapeLaTeX(proj.URL))
 			}
+			projects += fmt.Sprintf("\\project{%s}{%s}{%s}\n", title, dateRange, technologies)
+			if proj.Description != "" {
+				projects += "\\begin{itemize}[leftmargin=1em, noitemsep, topsep=2pt]\n"
+				for _, line := range strings.Split(proj.Description, "\n") {
+					line = strings.TrimSpace(line)
+					if line != "" {
+						projects += fmt.Sprintf("\\item %s\n", escapeLaTeX(line))
+					}
+				}
+				projects += "\\end{itemize}\n"
+			}
+			projects += "\\vspace{6pt}\n\n"
 		}
-		projects += "\\end{itemize}\n"
 	}
 
-	// Build certifications
-	certifications := ""
+	// Build certifications as achievements using \project command
+	achievements := ""
 	if len(res.Certifications) > 0 {
-		certifications = "\\section*{Certifications}\n\\begin{itemize}[leftmargin=*,itemsep=0.1cm]\n"
+		achievements = "\\section{ACHIEVEMENTS}\n"
 		for _, cert := range res.Certifications {
-			certLine := fmt.Sprintf("\\textbf{%s} | %s", escapeLaTeX(cert.Name), escapeLaTeX(cert.Issuer))
+			title := escapeLaTeX(cert.Name)
+			date := ""
 			if cert.IssueDate != nil && *cert.IssueDate != "" {
-				certLine += fmt.Sprintf(" (%s)", escapeLaTeX(*cert.IssueDate))
+				date = escapeLaTeX(*cert.IssueDate)
 			}
+			category := escapeLaTeX(cert.Issuer)
 			if cert.URL != "" {
-				certLine += fmt.Sprintf(" | \\href{https://%s}{%s}", cert.URL, escapeLaTeX(cert.URL))
+				category += fmt.Sprintf(" | \\href{https://%s}{%s}", cert.URL, escapeLaTeX(cert.URL))
 			}
-			certifications += fmt.Sprintf("\\item %s\n", certLine)
+			achievements += fmt.Sprintf("\\project{%s}{%s}{%s}\n", title, date, category)
+			achievements += "\\begin{itemize}[leftmargin=1em, noitemsep, topsep=2pt]\n"
+			achievements += fmt.Sprintf("\\item %s\n", escapeLaTeX(cert.Name))
+			achievements += "\\end{itemize}\n"
+			achievements += "\\vspace{4pt}\n\n"
 		}
-		certifications += "\\end{itemize}\n"
 	}
 
 	// Replace placeholders
@@ -294,11 +318,11 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 	tmpl = strings.ReplaceAll(tmpl, "{{NAME}}", name)
 	tmpl = strings.ReplaceAll(tmpl, "{{CONTACT_INFO}}", contactInfo)
 	tmpl = strings.ReplaceAll(tmpl, "{{SUMMARY}}", summary)
-	tmpl = strings.ReplaceAll(tmpl, "{{EXPERIENCE}}", experience)
 	tmpl = strings.ReplaceAll(tmpl, "{{EDUCATION}}", education)
-	tmpl = strings.ReplaceAll(tmpl, "{{SKILLS}}", skills)
+	tmpl = strings.ReplaceAll(tmpl, "{{EXPERIENCE}}", experience)
 	tmpl = strings.ReplaceAll(tmpl, "{{PROJECTS}}", projects)
-	tmpl = strings.ReplaceAll(tmpl, "{{CERTIFICATIONS}}", certifications)
+	tmpl = strings.ReplaceAll(tmpl, "{{SKILLS}}", skills)
+	tmpl = strings.ReplaceAll(tmpl, "{{ACHIEVEMENTS}}", achievements)
 
 	return tmpl, nil
 }
@@ -309,32 +333,24 @@ func (g *Generator) generateCoverLetterLaTeX(res *resume.Resume, jobTitle, compa
 		return "", err
 	}
 
-	// Build contact info
-	var contactParts []string
+	// Build contact info (formatted for new template)
+	var contactLines []string
 	if res.ContactInfo.Name != "" {
-		contactParts = append(contactParts, escapeLaTeX(res.ContactInfo.Name))
+		contactLines = append(contactLines, escapeLaTeX(res.ContactInfo.Name))
 	}
+	address := ""
+	if res.ContactInfo.Location != "" {
+		address = escapeLaTeX(res.ContactInfo.Location)
+	}
+	if address != "" {
+		contactLines = append(contactLines, address)
+	}
+	contactInfo := strings.Join(contactLines, "\\\\\n")
 	if res.ContactInfo.Email != "" {
-		contactParts = append(contactParts, fmt.Sprintf("\\href{mailto:%s}{%s}", res.ContactInfo.Email, escapeLaTeX(res.ContactInfo.Email)))
+		contactInfo += fmt.Sprintf("\\\\\n\\href{mailto:%s}{%s}", res.ContactInfo.Email, escapeLaTeX(res.ContactInfo.Email))
 	}
 	if res.ContactInfo.Phone != "" {
-		contactParts = append(contactParts, escapeLaTeX(res.ContactInfo.Phone))
-	}
-	if res.ContactInfo.Location != "" {
-		contactParts = append(contactParts, escapeLaTeX(res.ContactInfo.Location))
-	}
-	contactInfo := strings.Join(contactParts, " | ")
-	if res.ContactInfo.LinkedIn != "" || res.ContactInfo.Website != "" {
-		var links []string
-		if res.ContactInfo.LinkedIn != "" {
-			links = append(links, fmt.Sprintf("\\href{https://%s}{%s}", res.ContactInfo.LinkedIn, escapeLaTeX(res.ContactInfo.LinkedIn)))
-		}
-		if res.ContactInfo.Website != "" {
-			links = append(links, fmt.Sprintf("\\href{https://%s}{%s}", res.ContactInfo.Website, escapeLaTeX(res.ContactInfo.Website)))
-		}
-		if len(links) > 0 {
-			contactInfo += "\\\\\n" + strings.Join(links, " | ")
-		}
+		contactInfo += fmt.Sprintf("\\\\\n%s", escapeLaTeX(res.ContactInfo.Phone))
 	}
 
 	// Build company info
@@ -348,6 +364,9 @@ func (g *Generator) generateCoverLetterLaTeX(res *resume.Resume, jobTitle, compa
 	if jobTitle != "" {
 		subject = fmt.Sprintf("Re: %s Position", escapeLaTeX(jobTitle))
 	}
+
+	// Build date (current date)
+	dateStr := "\\today"
 
 	// Build body
 	var firstRole, firstSkill string
@@ -382,13 +401,15 @@ func (g *Generator) generateCoverLetterLaTeX(res *resume.Resume, jobTitle, compa
 	if signature == "" {
 		signature = "Your Name"
 	}
+	signatureLine := fmt.Sprintf("Sincerely,\\\\[2cm]\\rule{7cm}{0.4pt}\\\\%s", signature)
 
 	// Replace placeholders
 	tmpl = strings.ReplaceAll(tmpl, "{{CONTACT_INFO}}", contactInfo)
+	tmpl = strings.ReplaceAll(tmpl, "{{DATE}}", dateStr)
 	tmpl = strings.ReplaceAll(tmpl, "{{COMPANY_INFO}}", companyInfo)
 	tmpl = strings.ReplaceAll(tmpl, "{{SUBJECT}}", subject)
 	tmpl = strings.ReplaceAll(tmpl, "{{BODY}}", body)
-	tmpl = strings.ReplaceAll(tmpl, "{{SIGNATURE}}", signature)
+	tmpl = strings.ReplaceAll(tmpl, "{{SIGNATURE}}", signatureLine)
 
 	return tmpl, nil
 }
@@ -448,3 +469,4 @@ func (g *Generator) compileLaTeX(latexContent, baseName string) ([]byte, error) 
 
 	return pdfData, nil
 }
+
