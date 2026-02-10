@@ -1,0 +1,43 @@
+[
+  {
+    "id": "modern",
+    "version": "1.0",
+    "name": "Modern",
+    "description": "Clean, professional design with modern typography",
+    "category": "professional",
+    "latex_file": "modern/resume.tex"
+  },
+  {
+    "id": "classic",
+    "version": "1.0",
+    "name": "Classic",
+    "description": "Traditional format with timeless elegance",
+    "category": "traditional",
+    "latex_file": "classic/resume.tex"
+  },
+  {
+    "id": "minimal",
+    "version": "1.0",
+    "name": "Minimal",
+    "description": "Clean, ATS-friendly format with maximum readability",
+    "category": "ats-friendly",
+    "latex_file": "minimal/resume.tex"
+  },
+  {
+    "id": "executive",
+    "version": "1.0",
+    "name": "Executive",
+    "description": "Sophisticated design for senior roles",
+    "category": "executive",
+    "latex_file": "executive/resume.tex"
+  },
+  {
+    "id": "creative",
+    "version": "1.0",
+    "name": "Creative",
+    "description": "Bold design for creative and design roles",
+    "category": "creative",
+    "latex_file": "creative/resume.tex"
+  }
+]
+

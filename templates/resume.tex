@@ -4,6 +4,8 @@
 \usepackage{enumitem}
 \usepackage{titlesec}
 \usepackage[hidelinks]{hyperref}
+\usepackage{fontspec}
+\setmainfont{Liberation Serif}
 
 \pagestyle{empty}
 \setlength{\parindent}{0pt}
@@ -12,6 +14,8 @@
 % Section formatting
 \titleformat{\section}{\large\bfseries}{}{0pt}{}[\titlerule\vspace{4pt}]
 \titlespacing*{\section}{0pt}{12pt}{4pt}
+\titleformat{name=\section,numberless}{\large\bfseries}{}{0pt}{}[\titlerule\vspace{4pt}]
+\titlespacing*{name=\section,numberless}{0pt}{12pt}{4pt}
 
 % Custom commands
 \newcommand{\entry}[4]{

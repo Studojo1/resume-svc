@@ -15,6 +15,7 @@ type Resume struct {
 	Title       string      `json:"title"`
 	Summary     string      `json:"summary"`
 	ContactInfo ContactInfo `json:"contact_info"`
+	TemplateID  string      `json:"template_id,omitempty"` // Template ID for rendering
 
 	WorkExperiences []WorkExperience `json:"work_experiences,omitempty"`
 	Educations      []Education      `json:"educations,omitempty"`

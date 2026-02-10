@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/studojo/jobs/internal/domain/resume"
+	"github.com/studojo/jobs/internal/template"
 )
 
 type Generator struct {
@@ -125,9 +126,19 @@ func loadTemplate(name string) (string, error) {
 }
 
 func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
-	tmpl, err := loadTemplate("resume")
+	// Use template ID if provided, otherwise default to "modern"
+	templateID := res.TemplateID
+	if templateID == "" {
+		templateID = "modern"
+	}
+	
+	tmpl, err := template.LoadTemplate(templateID, "resume")
 	if err != nil {
-		return "", err
+		// Fallback to old method for backward compatibility
+		tmpl, err = loadTemplate("resume")
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// Build contact info (single line format)
@@ -144,7 +155,16 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 	if res.ContactInfo.Phone != "" {
 		contactParts = append(contactParts, escapeLaTeX(res.ContactInfo.Phone))
 	}
-	contactInfo := strings.Join(contactParts, " $|$ ")
+	
+	// Join contact parts with proper LaTeX separator, or use a default if empty
+	contactInfo := ""
+	if len(contactParts) > 0 {
+		// Use text-mode pipe separator instead of math mode to avoid rendering issues
+		contactInfo = strings.Join(contactParts, " \\textbar{} ")
+	} else {
+		// Provide a default if no contact info is available
+		contactInfo = "Contact information not provided"
+	}
 
 	// Build summary
 	summary := ""
@@ -155,7 +175,7 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 	// Build experience using \entry command
 	experience := ""
 	if len(res.WorkExperiences) > 0 {
-		experience = "\\section{EXPERIENCE}\n"
+		experience = "\\section*{EXPERIENCE}\n"
 		for _, exp := range res.WorkExperiences {
 			company := escapeLaTeX(exp.Company)
 			location := ""
@@ -189,7 +209,7 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 	// Build education using \entry command
 	education := ""
 	if len(res.Educations) > 0 {
-		education = "\\section{EDUCATION}\n"
+		education = "\\section*{EDUCATION}\n"
 		for _, edu := range res.Educations {
 			institution := escapeLaTeX(edu.Institution)
 			location := ""
@@ -230,7 +250,7 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 			}
 		}
 		if len(skillGroups) > 0 {
-			skills = "\\section{TECHNICAL SKILLS}\n"
+			skills = "\\section*{TECHNICAL SKILLS}\n"
 			// Map categories to standard labels
 			categoryMap := map[string]string{
 				"Languages": "Languages",
@@ -256,7 +276,7 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 	// Build projects using \project command
 	projects := ""
 	if len(res.Projects) > 0 {
-		projects = "\\section{PROJECTS}\n"
+		projects = "\\section*{PROJECTS}\n"
 		for _, proj := range res.Projects {
 			title := escapeLaTeX(proj.Title)
 			dateRange := ""
@@ -290,7 +310,7 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 	// Build certifications as achievements using \project command
 	achievements := ""
 	if len(res.Certifications) > 0 {
-		achievements = "\\section{ACHIEVEMENTS}\n"
+		achievements = "\\section*{ACHIEVEMENTS}\n"
 		for _, cert := range res.Certifications {
 			title := escapeLaTeX(cert.Name)
 			date := ""
@@ -315,6 +335,10 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 		name = "Resume"
 	}
 
+	// Debug logging: Log section content before replacement
+	log.Printf("[latex-gen] Building LaTeX - Name: %q, ContactInfo: %q, Summary: %d chars, Experience: %d entries, Education: %d entries, Skills: %d entries, Projects: %d entries, Certifications: %d entries",
+		name, contactInfo, len(summary), len(res.WorkExperiences), len(res.Educations), len(res.Skills), len(res.Projects), len(res.Certifications))
+
 	tmpl = strings.ReplaceAll(tmpl, "{{NAME}}", name)
 	tmpl = strings.ReplaceAll(tmpl, "{{CONTACT_INFO}}", contactInfo)
 	tmpl = strings.ReplaceAll(tmpl, "{{SUMMARY}}", summary)
@@ -323,6 +347,19 @@ func (g *Generator) generateResumeLaTeX(res *resume.Resume) (string, error) {
 	tmpl = strings.ReplaceAll(tmpl, "{{PROJECTS}}", projects)
 	tmpl = strings.ReplaceAll(tmpl, "{{SKILLS}}", skills)
 	tmpl = strings.ReplaceAll(tmpl, "{{ACHIEVEMENTS}}", achievements)
+
+	// Debug logging: Log final LaTeX content length and preview
+	latexLength := len(tmpl)
+	latexPreview := tmpl
+	if len(latexPreview) > 500 {
+		latexPreview = latexPreview[:500] + "..."
+	}
+	log.Printf("[latex-gen] Generated LaTeX - Length: %d chars, Preview (first 500): %s", latexLength, latexPreview)
+
+	// Warn if LaTeX seems empty or too short
+	if latexLength < 200 {
+		log.Printf("[latex-gen] Warning: Generated LaTeX is very short (%d chars), may result in blank PDF", latexLength)
+	}
 
 	return tmpl, nil
 }
@@ -432,20 +469,28 @@ func (g *Generator) compileLaTeX(latexContent, baseName string) ([]byte, error) 
 		return nil, fmt.Errorf("write tex file: %w", err)
 	}
 
-	// Run pdflatex twice for proper references
-	cmd := exec.Command("pdflatex", "-interaction=nonstopmode", "-output-directory", tmpDir, baseName+".tex")
+	// Run xelatex twice for proper references (required for fontspec templates)
+	cmd := exec.Command("xelatex", "-interaction=nonstopmode", "-output-directory", tmpDir, baseName+".tex")
 	cmd.Dir = tmpDir
 	var stderr bytes.Buffer
 	var stdout bytes.Buffer
 	cmd.Stderr = &stderr
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err != nil {
-		log.Printf("pdflatex first pass warning: %s", stderr.String())
+		log.Printf("[latex-compile] xelatex first pass warning: %s", stderr.String())
+		if stderr.Len() > 0 {
+			log.Printf("[latex-compile] xelatex stderr: %s", stderr.String())
+		}
+		if stdout.Len() > 0 {
+			log.Printf("[latex-compile] xelatex stdout: %s", stdout.String())
+		}
 	}
 
 	// Second pass for references
-	cmd = exec.Command("pdflatex", "-interaction=nonstopmode", "-output-directory", tmpDir, baseName+".tex")
+	cmd = exec.Command("xelatex", "-interaction=nonstopmode", "-output-directory", tmpDir, baseName+".tex")
 	cmd.Dir = tmpDir
+	stderr.Reset()
+	stdout.Reset()
 	cmd.Stderr = &stderr
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err != nil {
@@ -455,18 +500,28 @@ func (g *Generator) compileLaTeX(latexContent, baseName string) ([]byte, error) 
 			// PDF exists, read it even if there were warnings
 			pdfData, readErr := os.ReadFile(pdfFile)
 			if readErr == nil {
+				log.Printf("[latex-compile] PDF generated successfully despite warnings, size: %d bytes", len(pdfData))
 				return pdfData, nil
 			}
 		}
-		return nil, fmt.Errorf("pdflatex failed: %w, stderr: %s, stdout: %s", err, stderr.String(), stdout.String())
+		log.Printf("[latex-compile] xelatex second pass failed: %v, stderr: %s, stdout: %s", err, stderr.String(), stdout.String())
+		return nil, fmt.Errorf("xelatex failed: %w, stderr: %s, stdout: %s", err, stderr.String(), stdout.String())
 	}
 
+	// Read the generated PDF
 	pdfFile := filepath.Join(tmpDir, baseName+".pdf")
 	pdfData, err := os.ReadFile(pdfFile)
+	if err == nil {
+		log.Printf("[latex-compile] PDF compiled successfully, size: %d bytes", len(pdfData))
+	}
 	if err != nil {
 		return nil, fmt.Errorf("read pdf: %w", err)
 	}
 
 	return pdfData, nil
 }
+
+// GeneratePNG has been removed.
+// Template previews are now static PNG images stored in blob storage.
+// PDF→PNG conversion is no longer performed - previews are pre-generated assets.
 

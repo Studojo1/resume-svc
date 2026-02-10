@@ -20,10 +20,17 @@ FROM debian:bookworm-slim
 WORKDIR /app
 
 # Install LaTeX and dependencies
+# Note: We use XeLaTeX because templates rely on fontspec (requires XeTeX/LuaTeX)
+# Template previews are static PNG images stored in blob storage
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    texlive-xetex \
     texlive-latex-base \
     texlive-latex-extra \
     texlive-fonts-recommended \
+    fontconfig \
+    fonts-liberation \
+    fonts-dejavu \
+    fonts-lmodern \
     zip \
     ca-certificates \
     curl \

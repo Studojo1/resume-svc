@@ -1,0 +1,64 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage[margin=0.8in]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{fontspec}
+\setmainfont{Liberation Serif}
+\definecolor{execblue}{RGB}{0,51,102}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{0pt}
+
+% Executive section formatting - sophisticated
+\titleformat{\section}{\Large\bfseries\color{execblue}}{}{0pt}{}[\vspace{3pt}\textcolor{execblue}{\titlerule[1.5pt]}\vspace{6pt}]
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+\titleformat{name=\section,numberless}{\Large\bfseries\color{execblue}}{}{0pt}{}[\vspace{3pt}\textcolor{execblue}{\titlerule[1.5pt]}\vspace{6pt}]
+\titlespacing*{name=\section,numberless}{0pt}{14pt}{6pt}
+
+% Custom commands
+\newcommand{\entry}[4]{
+    \textbf{#1} \hfill \textcolor{execblue}{#2} \\
+    \textit{#3} \hfill \textit{#4}
+    \vspace{3pt}
+}
+
+\newcommand{\project}[3]{
+    \textbf{#1} \hfill \textcolor{execblue}{#2} \\
+    \textit{#3}
+    \vspace{3pt}
+}
+
+\begin{document}
+
+% Header - executive format
+\begin{center}
+    {\Huge\textbf{{{NAME}}}}\\[6pt]
+    {{CONTACT_INFO}}
+\end{center}
+
+\vspace{10pt}
+
+% Professional Summary
+{{SUMMARY}}
+
+% Experience
+{{EXPERIENCE}}
+
+% Education
+{{EDUCATION}}
+
+% Technical Skills
+{{SKILLS}}
+
+% Projects
+{{PROJECTS}}
+
+% Achievements (Certifications)
+{{ACHIEVEMENTS}}
+
+\end{document}
+

@@ -1,0 +1,64 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage[margin=0.7in]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{fontspec}
+\setmainfont{Liberation Serif}
+\definecolor{creativeaccent}{RGB}{46,125,50}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{0pt}
+
+% Creative section formatting - bold and modern
+\titleformat{\section}{\Large\bfseries\color{creativeaccent}}{}{0pt}{}[\vspace{4pt}\textcolor{creativeaccent}{\rule{0.3\textwidth}{2pt}}\vspace{6pt}]
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+\titleformat{name=\section,numberless}{\Large\bfseries\color{creativeaccent}}{}{0pt}{}[\vspace{4pt}\textcolor{creativeaccent}{\rule{0.3\textwidth}{2pt}}\vspace{6pt}]
+\titlespacing*{name=\section,numberless}{0pt}{12pt}{6pt}
+
+% Custom commands
+\newcommand{\entry}[4]{
+    \textbf{#1} \hfill \textcolor{creativeaccent}{#2} \\
+    \textit{#3} \hfill \textit{#4}
+    \vspace{3pt}
+}
+
+\newcommand{\project}[3]{
+    \textbf{#1} \hfill \textcolor{creativeaccent}{#2} \\
+    \textit{#3}
+    \vspace{3pt}
+}
+
+\begin{document}
+
+% Header - creative format
+\begin{center}
+    {\LARGE\textbf{{{NAME}}}}\\[4pt]
+    {{CONTACT_INFO}}
+\end{center}
+
+\vspace{8pt}
+
+% Professional Summary
+{{SUMMARY}}
+
+% Experience
+{{EXPERIENCE}}
+
+% Education
+{{EDUCATION}}
+
+% Technical Skills
+{{SKILLS}}
+
+% Projects
+{{PROJECTS}}
+
+% Achievements (Certifications)
+{{ACHIEVEMENTS}}
+
+\end{document}
+

@@ -1,0 +1,63 @@
+\documentclass[letterpaper,10pt]{article}
+
+\usepackage[margin=0.6in]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fontspec}
+\setmainfont{Liberation Serif}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\setlength{\tabcolsep}{0pt}
+
+% Minimal section formatting - simple and clean
+\titleformat{\section}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+\titleformat{name=\section,numberless}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{name=\section,numberless}{0pt}{8pt}{4pt}
+
+% Custom commands - minimal styling
+\newcommand{\entry}[4]{
+    \textbf{#1} \hfill #2 \\
+    #3 \hfill #4
+    \vspace{1pt}
+}
+
+\newcommand{\project}[3]{
+    \textbf{#1} \hfill #2 \\
+    #3
+    \vspace{1pt}
+}
+
+\begin{document}
+
+% Header - minimal format
+\begin{center}
+    {\large\textbf{{{NAME}}}}\\[2pt]
+    {{CONTACT_INFO}}
+\end{center}
+
+\vspace{6pt}
+
+% Professional Summary
+{{SUMMARY}}
+
+% Experience
+{{EXPERIENCE}}
+
+% Education
+{{EDUCATION}}
+
+% Technical Skills
+{{SKILLS}}
+
+% Projects
+{{PROJECTS}}
+
+% Achievements (Certifications)
+{{ACHIEVEMENTS}}
+
+\end{document}
+
