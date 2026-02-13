@@ -14,6 +14,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 
 # Copy templates
 COPY templates/ /app/templates/
+# Copy templates.json for template registry
+COPY internal/template/templates.json /app/templates/templates.json
 
 # Runtime stage - use Debian for LaTeX support
 FROM debian:bookworm-slim
