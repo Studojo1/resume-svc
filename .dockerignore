@@ -19,7 +19,7 @@ tests/
 *~
 
 # Build artifacts
-server
+/server
 tmp/
 *.log
 
