@@ -1,12 +1,10 @@
 package handler
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/studojo/jobs/internal/domain/resume"
 )
@@ -40,7 +38,7 @@ func (h *OptimizeHandler) OptimizeResume(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Optimize resume using LLM (OpenAI GPT-4)
+	// Optimize resume using LLM (Azure OpenAI)
 	optimized, err := optimizeResumeWithLLM(req.Resume, req.JobTitle, req.Company, req.JobDescription)
 	if err != nil {
 		log.Printf("LLM optimization failed, using fallback: %v", err)
@@ -56,11 +54,11 @@ func (h *OptimizeHandler) OptimizeResume(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// optimizeResumeWithLLM optimizes resume using OpenAI GPT-4
+// optimizeResumeWithLLM optimizes resume using Azure OpenAI
 func optimizeResumeWithLLM(res resume.Resume, jobTitle, company, jobDescription string) (resume.Resume, error) {
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		return res, fmt.Errorf("OPENAI_API_KEY not set")
+	azure, err := azureOpenAIFromEnv()
+	if err != nil {
+		return res, err
 	}
 
 	// Prepare prompt
@@ -83,9 +81,8 @@ Optimize the resume by:
 
 Return ONLY the optimized resume as valid JSON matching the exact same structure as the input. Do not include any markdown, code blocks, or explanations.`, jobTitle, company, jobDescription, string(resumeJSON))
 
-	// Call OpenAI API
+	// Call Azure OpenAI (the deployment picks the model)
 	payload := map[string]interface{}{
-		"model": "gpt-4o",
 		"messages": []map[string]string{
 			{
 				"role":    "system",
@@ -99,14 +96,10 @@ Return ONLY the optimized resume as valid JSON matching the exact same structure
 		"temperature": 0.3,
 	}
 
-	payloadJSON, _ := json.Marshal(payload)
-	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(payloadJSON))
+	req, err := azure.newChatRequest(azureDeployment("AZURE_OPENAI_CHAT_DEPLOYMENT", "gpt-4o"), payload)
 	if err != nil {
-		return res, fmt.Errorf("create request: %w", err)
+		return res, err
 	}
-
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -116,7 +109,7 @@ Return ONLY the optimized resume as valid JSON matching the exact same structure
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return res, fmt.Errorf("OpenAI API returned %d", resp.StatusCode)
+		return res, fmt.Errorf("Azure OpenAI returned %d", resp.StatusCode)
 	}
 
 	var apiResp struct {
