@@ -1,12 +1,10 @@
 package handler
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/studojo/jobs/internal/domain/resume"
@@ -37,7 +35,7 @@ type Suggestion struct {
 	SuggestedValue string `json:"suggested_value,omitempty"`
 }
 
-// Suggest provides AI-powered section-level suggestions using OpenAI.
+// Suggest provides AI-powered section-level suggestions using Azure OpenAI.
 func (h *SuggestHandler) Suggest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -52,7 +50,7 @@ func (h *SuggestHandler) Suggest(w http.ResponseWriter, r *http.Request) {
 
 	suggestions := []Suggestion{}
 
-	// Try to get AI suggestions from OpenAI
+	// Try to get AI suggestions from Azure OpenAI
 	aiSuggestions, err := getAISuggestions(req.Resume, req.JobTitle, req.JobDescription)
 	if err != nil {
 		log.Printf("Failed to get AI suggestions: %v, falling back to rule-based suggestions", err)
@@ -216,11 +214,11 @@ func min(a, b int) int {
 	return b
 }
 
-// getAISuggestions uses OpenAI to generate intelligent suggestions with suggested values
+// getAISuggestions uses Azure OpenAI to generate intelligent suggestions with suggested values
 func getAISuggestions(res resume.Resume, jobTitle, jobDescription string) ([]Suggestion, error) {
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("OPENAI_API_KEY not set")
+	azure, err := azureOpenAIFromEnv()
+	if err != nil {
+		return nil, err
 	}
 
 	// Convert resume to JSON for the prompt
@@ -258,9 +256,8 @@ Focus on:
 
 Return ONLY valid JSON array, no markdown or explanations.`, string(resumeJSON), jobTitle, jobDescription)
 
-	// Call OpenAI API
+	// Call Azure OpenAI (the deployment picks the model)
 	payload := map[string]interface{}{
-		"model": "gpt-4o-mini",
 		"messages": []map[string]string{
 			{
 				"role":    "system",
@@ -274,18 +271,10 @@ Return ONLY valid JSON array, no markdown or explanations.`, string(resumeJSON),
 		"temperature": 0.3,
 	}
 
-	payloadJSON, err := json.Marshal(payload)
+	httpReq, err := azure.newChatRequest(azureDeployment("AZURE_OPENAI_MINI_DEPLOYMENT", "gpt-4o-mini"), payload)
 	if err != nil {
-		return nil, fmt.Errorf("marshal payload: %w", err)
+		return nil, err
 	}
-
-	httpReq, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(payloadJSON))
-	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
-	}
-
-	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
-	httpReq.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(httpReq)
@@ -295,7 +284,7 @@ Return ONLY valid JSON array, no markdown or explanations.`, string(resumeJSON),
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("OpenAI API returned %d", resp.StatusCode)
+		return nil, fmt.Errorf("Azure OpenAI returned %d", resp.StatusCode)
 	}
 
 	var apiResp struct {
