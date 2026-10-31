@@ -21,9 +21,9 @@ func NewOptimizeHandler() *OptimizeHandler {
 
 // OptimizeRequest is the request body for optimization.
 type OptimizeRequest struct {
-	Resume        resume.Resume `json:"resume"`
-	JobTitle      string         `json:"job_title"`
-	Company       string         `json:"company"`
+	Resume         resume.Resume `json:"resume"`
+	JobTitle       string        `json:"job_title"`
+	Company        string        `json:"company"`
 	JobDescription string        `json:"job_description"`
 }
 
@@ -85,7 +85,7 @@ Return ONLY the optimized resume as valid JSON matching the exact same structure
 
 	// Call OpenAI API
 	payload := map[string]interface{}{
-		"model": "gpt-4o",
+		"model": "gpt-4o-mini", // owner rule 31 Oct 2026: gpt-4o-mini everywhere, never gpt-4o
 		"messages": []map[string]string{
 			{
 				"role":    "system",
@@ -166,12 +166,12 @@ Return ONLY the optimized resume as valid JSON matching the exact same structure
 // enhanceResumeBasic provides basic enhancement without LLM
 func enhanceResumeBasic(res resume.Resume, jobTitle, jobDescription string) resume.Resume {
 	enhanced := res
-	
+
 	// Basic keyword enhancement (simple approach)
 	if jobDescription != "" && enhanced.Summary != "" {
 		// In a real implementation, this would do more sophisticated keyword matching
 		enhanced.Summary = enhanced.Summary // Keep original for now
 	}
-	
+
 	return enhanced
 }
